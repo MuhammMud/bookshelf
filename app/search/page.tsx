@@ -15,11 +15,21 @@ interface BookResult {
   isbn: string | null
 }
 
+const STATUS_OPTIONS = [
+  { value: 'want_to_read', label: 'Want to Read' },
+  { value: 'reading', label: 'Reading' },
+  { value: 'read', label: 'Read' },
+  { value: 'dnf', label: 'DNF' },
+]
+
 export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<BookResult[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const [shelving, setShelving] = useState<string | null>(null)
+  const [shelved, setShelved] = useState<Record<string, string>>({})
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
   const router = useRouter()
 
   async function handleSearch(e: React.FormEvent) {
@@ -39,6 +49,42 @@ export default function SearchPage() {
     }
 
     setLoading(false)
+  }
+
+  async function handleShelve(book: BookResult, status: string) {
+    setShelving(book.openLibraryKey)
+    setOpenMenu(null)
+
+    try {
+      const response = await fetch('/api/books/shelve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: book.title,
+          author: book.author,
+          openLibraryKey: book.openLibraryKey,
+          coverUrl: book.coverUrl,
+          pageCount: book.pageCount,
+          firstPublishYear: book.firstPublishYear,
+          status,
+        }),
+      })
+
+      if (response.ok) {
+        setShelved((prev) => ({ ...prev, [book.openLibraryKey]: status }))
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to shelve book')
+      }
+    } catch (error) {
+      alert('Something went wrong. Please try again.')
+    }
+
+    setShelving(null)
+  }
+
+  function getStatusLabel(status: string) {
+    return STATUS_OPTIONS.find((s) => s.value === status)?.label || status
   }
 
   return (
@@ -122,6 +168,37 @@ export default function SearchPage() {
                         >
                           {subject}
                         </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-shrink-0 relative">
+                  {shelved[book.openLibraryKey] ? (
+                    <button
+                      onClick={() => setOpenMenu(openMenu === book.openLibraryKey ? null : book.openLibraryKey)}
+                      className="px-3 py-2 bg-green-900 text-green-300 text-sm rounded-lg border border-green-800"
+                    >
+                      ✓ {getStatusLabel(shelved[book.openLibraryKey])}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setOpenMenu(openMenu === book.openLibraryKey ? null : book.openLibraryKey)}
+                      disabled={shelving === book.openLibraryKey}
+                      className="px-3 py-2 bg-gray-800 text-white text-sm rounded-lg border border-gray-700 hover:border-gray-500 disabled:opacity-50"
+                    >
+                      {shelving === book.openLibraryKey ? '...' : '+ Shelve'}
+                    </button>
+                  )}
+                  {openMenu === book.openLibraryKey && (
+                    <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg overflow-hidden z-10 w-40">
+                      {STATUS_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handleShelve(book, option.value)}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-700 text-gray-200"
+                        >
+                          {option.label}
+                        </button>
                       ))}
                     </div>
                   )}
