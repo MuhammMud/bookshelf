@@ -15,21 +15,56 @@ export default async function Home() {
     .eq('id', user.id)
     .single()
 
+  const { data: userBooks } = await supabase
+    .from('user_books')
+    .select('status')
+    .eq('user_id', user.id)
+
+  const counts = {
+    total: userBooks?.length || 0,
+    reading: userBooks?.filter((b) => b.status === 'reading').length || 0,
+    read: userBooks?.filter((b) => b.status === 'read').length || 0,
+    want: userBooks?.filter((b) => b.status === 'want_to_read').length || 0,
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black text-white">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Bookshelf</h1>
-        <p className="text-gray-400 mb-2">
-          Welcome, {profile?.display_name || profile?.username || user.email}
-        </p>
-        <p className="text-gray-500 text-sm mb-8">
-          @{profile?.username || 'setting up...'}
-        </p>
-        <form action="/auth/signout" method="POST">
-          <button type="submit" className="px-6 py-2 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-900">
-            Sign Out
-          </button>
-        </form>
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">Bookshelf</h1>
+            <p className="text-gray-400 text-sm">Welcome back, {profile?.display_name || profile?.username || 'reader'}</p>
+          </div>
+          <form action="/auth/signout" method="POST">
+            <button type="submit" className="text-gray-400 hover:text-white text-sm">Sign Out</button>
+          </form>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-gray-900 rounded-lg p-4 border border-gray-800 text-center">
+            <p className="text-2xl font-bold">{counts.reading}</p>
+            <p className="text-gray-400 text-sm">Reading</p>
+          </div>
+          <div className="bg-gray-900 rounded-lg p-4 border border-gray-800 text-center">
+            <p className="text-2xl font-bold">{counts.read}</p>
+            <p className="text-gray-400 text-sm">Read</p>
+          </div>
+          <div className="bg-gray-900 rounded-lg p-4 border border-gray-800 text-center">
+            <p className="text-2xl font-bold">{counts.want}</p>
+            <p className="text-gray-400 text-sm">Want to Read</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <a href="/search" className="flex items-center justify-between p-4 bg-gray-900 rounded-lg border border-gray-800 hover:border-gray-600 transition-colors">
+            <span className="font-medium">Search Books</span>
+            <span className="text-gray-400">→</span>
+          </a>
+          <a href="/my-books" className="flex items-center justify-between p-4 bg-gray-900 rounded-lg border border-gray-800 hover:border-gray-600 transition-colors">
+            <span className="font-medium">My Books</span>
+            <span className="text-gray-400 text-sm">{counts.total} books →</span>
+          </a>
+        </div>
       </div>
     </div>
   )
