@@ -42,7 +42,7 @@ function StarRating({ rating }: { rating: number | null }) {
     } else if (i - 0.5 <= rating) {
       stars.push(<span key={i} className="text-amber-400">★</span>)
     } else {
-      stars.push(<span key={i} className="text-amber-800">★</span>)
+      stars.push(<span key={i} className="text-amber-900/40">★</span>)
     }
   }
   return <span className="text-sm tracking-wide">{stars}</span>
@@ -65,27 +65,28 @@ export default function HomeClient({ profile, userBooks }: { profile: Profile | 
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-200">
-      <div className="max-w-5xl mx-auto px-5 py-8">
+    <div className="min-h-screen bg-[#0a0908] text-[#e8e0d4]">
+      <div className="fixed inset-0 bg-gradient-to-br from-amber-950/20 via-transparent to-orange-950/10 pointer-events-none" />
 
+      <div className="relative max-w-5xl mx-auto px-5 py-8">
         <header className="flex items-center justify-between mb-12">
           <div>
-            <p className="text-amber-600 text-sm font-medium tracking-widest uppercase mb-1">
+            <p className="text-amber-600/80 text-sm font-medium tracking-widest uppercase mb-1">
               {getGreeting()}
             </p>
-            <h1 className="text-3xl font-bold tracking-tight text-stone-100">
+            <h1 className="text-3xl font-bold tracking-tight text-[#f5efe7]">
               {profile?.display_name || profile?.username || 'Reader'}
             </h1>
           </div>
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/search')}
-              className="px-4 py-2.5 bg-amber-600 text-stone-950 text-sm font-semibold rounded-xl hover:bg-amber-500 transition-all duration-200"
+              className="px-4 py-2.5 bg-amber-600/90 text-[#0a0908] text-sm font-semibold rounded-xl hover:bg-amber-500 transition-all duration-200"
             >
               + Find a Book
             </button>
             <form action="/auth/signout" method="POST">
-              <button type="submit" className="text-stone-500 hover:text-stone-300 text-sm transition-colors">
+              <button type="submit" className="text-[#e8e0d4]/40 hover:text-[#e8e0d4]/80 text-sm transition-colors">
                 Sign out
               </button>
             </form>
@@ -93,45 +94,32 @@ export default function HomeClient({ profile, userBooks }: { profile: Profile | 
         </header>
 
         <div className="grid grid-cols-4 gap-3 mb-12">
-          <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-blue-500/20 bg-blue-950/30 p-5 text-left hover:bg-blue-950/50 transition-all duration-200"
-          >
-            <p className="text-3xl font-bold text-blue-400">{counts.reading}</p>
-            <p className="text-stone-400 text-sm mt-1">Reading</p>
-          </button>
-          <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-emerald-500/20 bg-emerald-950/30 p-5 text-left hover:bg-emerald-950/50 transition-all duration-200"
-          >
-            <p className="text-3xl font-bold text-emerald-400">{counts.read}</p>
-            <p className="text-stone-400 text-sm mt-1">Read</p>
-          </button>
-          <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-purple-500/20 bg-purple-950/30 p-5 text-left hover:bg-purple-950/50 transition-all duration-200"
-          >
-            <p className="text-3xl font-bold text-purple-400">{counts.want}</p>
-            <p className="text-stone-400 text-sm mt-1">Want to Read</p>
-          </button>
-          <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-red-500/20 bg-red-950/30 p-5 text-left hover:bg-red-950/50 transition-all duration-200"
-          >
-            <p className="text-3xl font-bold text-red-400">{counts.dnf}</p>
-            <p className="text-stone-400 text-sm mt-1">DNF</p>
-          </button>
+          {[
+            { label: 'Reading', count: counts.reading, color: 'from-blue-500/20 to-blue-600/5', border: 'border-blue-500/20', text: 'text-blue-400' },
+            { label: 'Read', count: counts.read, color: 'from-emerald-500/20 to-emerald-600/5', border: 'border-emerald-500/20', text: 'text-emerald-400' },
+            { label: 'Want to Read', count: counts.want, color: 'from-purple-500/20 to-purple-600/5', border: 'border-purple-500/20', text: 'text-purple-400' },
+            { label: 'DNF', count: counts.dnf, color: 'from-red-500/20 to-red-600/5', border: 'border-red-500/20', text: 'text-red-400/70' },
+          ].map((stat) => (
+            <button
+              key={stat.label}
+              onClick={() => router.push('/my-books')}
+              className={`relative overflow-hidden rounded-2xl border ${stat.border} bg-gradient-to-br ${stat.color} p-5 text-left hover:scale-[1.02] transition-all duration-200`}
+            >
+              <p className={`text-3xl font-bold ${stat.text}`}>{stat.count}</p>
+              <p className="text-[#e8e0d4]/50 text-sm mt-1">{stat.label}</p>
+            </button>
+          ))}
         </div>
 
         {reading.length > 0 && (
           <section className="mb-12">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-stone-100 tracking-tight">
+              <h2 className="text-lg font-semibold text-[#f5efe7] tracking-tight">
                 Currently Reading
               </h2>
               <button
                 onClick={() => router.push('/my-books')}
-                className="text-amber-600 text-sm hover:text-amber-500 transition-colors"
+                className="text-amber-600/70 text-sm hover:text-amber-500 transition-colors"
               >
                 View all →
               </button>
@@ -145,31 +133,31 @@ export default function HomeClient({ profile, userBooks }: { profile: Profile | 
                 return (
                   <div
                     key={ub.id}
-                    className="flex gap-4 p-4 rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-900 transition-all duration-200"
+                    className="flex gap-4 p-4 rounded-2xl bg-[#1a1714] border border-[#2a2520] hover:border-amber-900/40 transition-all duration-200"
                   >
                     {ub.books.primary_cover_url ? (
                       <img
                         src={ub.books.primary_cover_url}
                         alt={ub.books.title}
-                        className="w-16 h-24 object-cover rounded-lg flex-shrink-0"
+                        className="w-16 h-24 object-cover rounded-lg shadow-lg shadow-black/40 flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-16 h-24 bg-stone-800 rounded-lg flex-shrink-0 flex items-center justify-center">
-                        <span className="text-stone-600 text-xs text-center">No Cover</span>
+                      <div className="w-16 h-24 bg-[#2a2520] rounded-lg flex-shrink-0 flex items-center justify-center">
+                        <span className="text-[#e8e0d4]/20 text-xs text-center">No Cover</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-stone-100 truncate">{ub.books.title}</h3>
-                      <p className="text-stone-500 text-sm">{ub.books.author_name}</p>
+                      <h3 className="font-semibold text-[#f5efe7] truncate">{ub.books.title}</h3>
+                      <p className="text-[#e8e0d4]/40 text-sm">{ub.books.author_name}</p>
                       {progress !== null && (
                         <div className="mt-3">
-                          <div className="flex justify-between text-xs text-stone-500 mb-1">
+                          <div className="flex justify-between text-xs text-[#e8e0d4]/30 mb-1">
                             <span>Page {ub.current_page}</span>
                             <span>{progress}%</span>
                           </div>
-                          <div className="w-full h-1.5 bg-stone-800 rounded-full overflow-hidden">
+                          <div className="w-full h-1.5 bg-[#2a2520] rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-amber-600 rounded-full transition-all"
+                              className="h-full bg-gradient-to-r from-amber-600 to-amber-500 rounded-full transition-all"
                               style={{ width: `${progress}%` }}
                             />
                           </div>
@@ -186,12 +174,12 @@ export default function HomeClient({ profile, userBooks }: { profile: Profile | 
         {recentlyUpdated.length > 0 && (
           <section className="mb-12">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-stone-100 tracking-tight">
+              <h2 className="text-lg font-semibold text-[#f5efe7] tracking-tight">
                 Recently Added
               </h2>
               <button
                 onClick={() => router.push('/my-books')}
-                className="text-amber-600 text-sm hover:text-amber-500 transition-colors"
+                className="text-amber-600/70 text-sm hover:text-amber-500 transition-colors"
               >
                 View library →
               </button>
@@ -204,21 +192,21 @@ export default function HomeClient({ profile, userBooks }: { profile: Profile | 
                       <img
                         src={ub.books.primary_cover_url}
                         alt={ub.books.title}
-                        className="w-full aspect-[2/3] object-cover rounded-xl group-hover:scale-105 transition-all duration-200"
+                        className="w-full aspect-[2/3] object-cover rounded-xl shadow-lg shadow-black/30 group-hover:shadow-amber-900/20 group-hover:scale-[1.03] transition-all duration-200"
                       />
                       {ub.rating && (
-                        <div className="absolute bottom-2 left-2 bg-black/70 rounded-lg px-1.5 py-0.5">
+                        <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm rounded-lg px-1.5 py-0.5">
                           <StarRating rating={ub.rating} />
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="w-full aspect-[2/3] bg-stone-900 rounded-xl border border-stone-800 flex items-center justify-center">
-                      <span className="text-stone-700 text-xs text-center px-2">{ub.books.title}</span>
+                    <div className="w-full aspect-[2/3] bg-[#1a1714] rounded-xl border border-[#2a2520] flex items-center justify-center">
+                      <span className="text-[#e8e0d4]/15 text-xs text-center px-2">{ub.books.title}</span>
                     </div>
                   )}
-                  <p className="text-sm font-medium text-stone-100 mt-2 truncate">{ub.books.title}</p>
-                  <p className="text-xs text-stone-500 truncate">{ub.books.author_name}</p>
+                  <p className="text-sm font-medium text-[#f5efe7] mt-2 truncate">{ub.books.title}</p>
+                  <p className="text-xs text-[#e8e0d4]/35 truncate">{ub.books.author_name}</p>
                 </div>
               ))}
             </div>
@@ -228,13 +216,13 @@ export default function HomeClient({ profile, userBooks }: { profile: Profile | 
         {userBooks.length === 0 && (
           <div className="text-center py-20">
             <div className="text-6xl mb-6">📚</div>
-            <h2 className="text-2xl font-bold text-stone-100 mb-3">Your shelf is empty</h2>
-            <p className="text-stone-500 mb-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-[#f5efe7] mb-3">Your shelf is empty</h2>
+            <p className="text-[#e8e0d4]/40 mb-8 max-w-md mx-auto">
               Start building your library by searching for books you love, want to read, or are currently reading.
             </p>
             <button
               onClick={() => router.push('/search')}
-              className="px-8 py-3 bg-amber-600 text-stone-950 font-semibold rounded-xl hover:bg-amber-500 transition-all duration-200"
+              className="px-8 py-3 bg-amber-600/90 text-[#0a0908] font-semibold rounded-xl hover:bg-amber-500 transition-all duration-200"
             >
               Find your first book
             </button>
@@ -246,26 +234,26 @@ export default function HomeClient({ profile, userBooks }: { profile: Profile | 
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => router.push('/search')}
-                className="p-5 rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-900 text-left transition-all duration-200"
+                className="p-5 rounded-2xl bg-[#1a1714] border border-[#2a2520] hover:border-amber-900/40 text-left transition-all duration-200"
               >
                 <span className="text-2xl mb-2 block">🔍</span>
-                <span className="font-medium text-stone-100">Search Books</span>
-                <p className="text-stone-500 text-sm mt-1">Find your next read</p>
+                <span className="font-medium text-[#f5efe7]">Search Books</span>
+                <p className="text-[#e8e0d4]/30 text-sm mt-1">Find your next read</p>
               </button>
               <button
                 onClick={() => router.push('/my-books')}
-                className="p-5 rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-900 text-left transition-all duration-200"
+                className="p-5 rounded-2xl bg-[#1a1714] border border-[#2a2520] hover:border-amber-900/40 text-left transition-all duration-200"
               >
                 <span className="text-2xl mb-2 block">📖</span>
-                <span className="font-medium text-stone-100">My Library</span>
-                <p className="text-stone-500 text-sm mt-1">{counts.total} books shelved</p>
+                <span className="font-medium text-[#f5efe7]">My Library</span>
+                <p className="text-[#e8e0d4]/30 text-sm mt-1">{counts.total} books shelved</p>
               </button>
             </div>
           </section>
         )}
 
-        <footer className="mt-16 pt-8 border-t border-stone-900 text-center">
-          <p className="text-stone-700 text-xs">Bookshelf — Track your reading journey</p>
+        <footer className="mt-16 pt-8 border-t border-[#1a1714] text-center">
+          <p className="text-[#e8e0d4]/15 text-xs">Bookshelf — Track your reading journey</p>
         </footer>
       </div>
     </div>
