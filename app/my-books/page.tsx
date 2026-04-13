@@ -10,6 +10,12 @@ export default async function MyBooksPage() {
     redirect('/login')
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
   const { data: userBooks } = await supabase
     .from('user_books')
     .select(`
@@ -34,5 +40,7 @@ export default async function MyBooksPage() {
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
-  return <MyBooksClient userBooks={userBooks || []} />
+  const name = profile?.display_name || profile?.username || 'Reader'
+
+  return <MyBooksClient userBooks={userBooks || []} name={name} />
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Book {
@@ -15,257 +16,218 @@ interface UserBook {
   id: string
   status: string
   rating: number | null
+  date_started: string | null
+  date_finished: string | null
   current_page: number | null
-  updated_at: string
+  dnf_percent: number | null
+  dnf_reason: string | null
+  created_at: string
   books: Book
 }
 
-interface Profile {
-  username: string
-  display_name: string | null
-  avatar_url: string | null
-}
+const TABS = [
+  { value: 'all', label: 'All' },
+  { value: 'reading', label: 'Reading' },
+  { value: 'read', label: 'Read' },
+  { value: 'want_to_read', label: 'Want to Read' },
+  { value: 'dnf', label: 'DNF' },
+]
 
-function getGreeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
-}
-
-function StarRating({ rating }: { rating: number | null }) {
-  if (!rating) return null
-  const stars = []
-  for (let i = 1; i <= 5; i++) {
-    if (i <= Math.floor(rating)) {
-      stars.push(<span key={i} className="text-amber-400">★</span>)
-    } else if (i - 0.5 <= rating) {
-      stars.push(<span key={i} className="text-amber-400">★</span>)
-    } else {
-      stars.push(<span key={i} className="text-amber-800">★</span>)
-    }
-  }
-  return <span className="text-sm tracking-wide">{stars}</span>
-}
-
-export default function HomeClient({ profile, userBooks }: { profile: Profile | null, userBooks: UserBook[] }) {
+export default function MyBooksClient({ userBooks, name }: { userBooks: UserBook[], name: string }) {
+  const [activeTab, setActiveTab] = useState('all')
   const router = useRouter()
 
-  const reading = userBooks.filter((ub) => ub.status === 'reading')
-  const read = userBooks.filter((ub) => ub.status === 'read')
-  const wantToRead = userBooks.filter((ub) => ub.status === 'want_to_read')
-  const recentlyUpdated = userBooks.slice(0, 6)
+  const filtered = activeTab === 'all'
+    ? userBooks
+    : userBooks.filter((ub) => ub.status === activeTab)
 
-  const counts = {
-    total: userBooks.length,
-    reading: reading.length,
-    read: read.length,
-    want: wantToRead.length,
+  const counts: Record<string, number> = {
+    all: userBooks.length,
+    reading: userBooks.filter((ub) => ub.status === 'reading').length,
+    read: userBooks.filter((ub) => ub.status === 'read').length,
+    want_to_read: userBooks.filter((ub) => ub.status === 'want_to_read').length,
     dnf: userBooks.filter((ub) => ub.status === 'dnf').length,
   }
 
+  function getStatusLabel(status: string) {
+    if (status === 'want_to_read') return 'Want to Read'
+    if (status === 'reading') return 'Reading'
+    if (status === 'read') return 'Read'
+    if (status === 'dnf') return 'DNF'
+    return status
+  }
+
+  function getStatusColor(status: string) {
+    if (status === 'reading') return { bg: '#e8f0e8', text: '#5b7a5e' }
+    if (status === 'read') return { bg: '#f0ece2', text: '#8b7355' }
+    if (status === 'want_to_read') return { bg: '#e8e4f0', text: '#7a6b8a' }
+    if (status === 'dnf') return { bg: '#f0e8e4', text: '#a08070' }
+    return { bg: '#f4efe6', text: '#3d3529' }
+  }
+
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-200">
-      <div className="max-w-5xl mx-auto px-5 py-8">
+    <div style={{ minHeight: '100vh', backgroundColor: '#faf6f0', color: '#3d3529' }}>
 
-        <header className="flex items-center justify-between mb-12">
-          <div>
-            <p className="text-amber-600 text-sm font-medium tracking-widest uppercase mb-1">
-              {getGreeting()}
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-stone-100">
-              {profile?.display_name || profile?.username || 'Reader'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/search')}
-              className="px-4 py-2.5 bg-amber-600 text-stone-950 text-sm font-semibold rounded-xl hover:bg-amber-500 transition-all duration-200"
-            >
-              + Find a Book
-            </button>
-            <form action="/auth/signout" method="POST">
-              <button type="submit" className="text-stone-500 hover:text-stone-300 text-sm transition-colors">
-                Sign out
-              </button>
-            </form>
-          </div>
-        </header>
-
-        <div className="grid grid-cols-4 gap-3 mb-12">
+      <nav style={{ maxWidth: '880px', margin: '0 auto', padding: '24px 24px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button
+          onClick={() => router.push('/')}
+          style={{ background: 'none', border: 'none', fontSize: '15px', fontWeight: 600, color: '#2c2418', letterSpacing: '-0.01em', cursor: 'pointer' }}
+        >
+          {name}&apos;s bookshelf
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-blue-500/20 bg-blue-950/30 p-5 text-left hover:bg-blue-950/50 transition-all duration-200"
+            onClick={() => router.push('/search')}
+            style={{ background: 'none', border: 'none', color: '#5b7a5e', fontSize: '14px', cursor: 'pointer', fontWeight: 500 }}
           >
-            <p className="text-3xl font-bold text-blue-400">{counts.reading}</p>
-            <p className="text-stone-400 text-sm mt-1">Reading</p>
-          </button>
-          <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-emerald-500/20 bg-emerald-950/30 p-5 text-left hover:bg-emerald-950/50 transition-all duration-200"
-          >
-            <p className="text-3xl font-bold text-emerald-400">{counts.read}</p>
-            <p className="text-stone-400 text-sm mt-1">Read</p>
-          </button>
-          <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-purple-500/20 bg-purple-950/30 p-5 text-left hover:bg-purple-950/50 transition-all duration-200"
-          >
-            <p className="text-3xl font-bold text-purple-400">{counts.want}</p>
-            <p className="text-stone-400 text-sm mt-1">Want to Read</p>
-          </button>
-          <button
-            onClick={() => router.push('/my-books')}
-            className="rounded-2xl border border-red-500/20 bg-red-950/30 p-5 text-left hover:bg-red-950/50 transition-all duration-200"
-          >
-            <p className="text-3xl font-bold text-red-400">{counts.dnf}</p>
-            <p className="text-stone-400 text-sm mt-1">DNF</p>
+            Search
           </button>
         </div>
+      </nav>
 
-        {reading.length > 0 && (
-          <section className="mb-12">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-stone-100 tracking-tight">
-                Currently Reading
-              </h2>
-              <button
-                onClick={() => router.push('/my-books')}
-                className="text-amber-600 text-sm hover:text-amber-500 transition-colors"
-              >
-                View all →
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reading.slice(0, 4).map((ub) => {
-                const progress = ub.current_page && ub.books.page_count
-                  ? Math.round((ub.current_page / ub.books.page_count) * 100)
-                  : null
+      <div style={{ maxWidth: '880px', margin: '0 auto', padding: '0 24px 80px' }}>
 
-                return (
-                  <div
-                    key={ub.id}
-                    className="flex gap-4 p-4 rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-900 transition-all duration-200"
-                  >
-                    {ub.books.primary_cover_url ? (
-                      <img
-                        src={ub.books.primary_cover_url}
-                        alt={ub.books.title}
-                        className="w-16 h-24 object-cover rounded-lg flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-16 h-24 bg-stone-800 rounded-lg flex-shrink-0 flex items-center justify-center">
-                        <span className="text-stone-600 text-xs text-center">No Cover</span>
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-stone-100 truncate">{ub.books.title}</h3>
-                      <p className="text-stone-500 text-sm">{ub.books.author_name}</p>
-                      {progress !== null && (
-                        <div className="mt-3">
-                          <div className="flex justify-between text-xs text-stone-500 mb-1">
-                            <span>Page {ub.current_page}</span>
-                            <span>{progress}%</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-stone-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-amber-600 rounded-full transition-all"
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                        </div>
+        <section style={{ paddingTop: '48px', paddingBottom: '32px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#2c2418', letterSpacing: '-0.02em', marginBottom: '8px' }}>
+            Library
+          </h1>
+          <p style={{ fontSize: '14px', color: '#a08c6e' }}>{userBooks.length} books</p>
+        </section>
+
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '32px', borderBottom: '1px solid #ebe5da', paddingBottom: '0' }}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              style={{
+                padding: '10px 16px',
+                fontSize: '14px',
+                fontWeight: activeTab === tab.value ? 600 : 400,
+                color: activeTab === tab.value ? '#2c2418' : '#a08c6e',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderBottom: activeTab === tab.value ? '2px solid #5b7a5e' : '2px solid transparent',
+                cursor: 'pointer',
+                marginBottom: '-1px',
+              }}
+            >
+              {tab.label}
+              <span style={{ marginLeft: '6px', fontSize: '12px', color: '#b5a78d' }}>{counts[tab.value]}</span>
+            </button>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <section style={{ textAlign: 'center', padding: '60px 0' }}>
+            <p style={{ color: '#a08c6e', marginBottom: '20px' }}>
+              {activeTab === 'all' ? "You haven't added any books yet." : 'No books in this shelf.'}
+            </p>
+            <button
+              onClick={() => router.push('/search')}
+              style={{
+                padding: '10px 24px',
+                backgroundColor: '#5b7a5e',
+                color: '#faf6f0',
+                border: 'none',
+                borderRadius: '24px',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Search for books
+            </button>
+          </section>
+        )}
+
+        {filtered.length > 0 && (
+          <section>
+            {filtered.map((ub, index) => {
+              const statusStyle = getStatusColor(ub.status)
+
+              return (
+                <div
+                  key={ub.id}
+                  style={{
+                    display: 'flex',
+                    gap: '16px',
+                    padding: '16px 0',
+                    borderBottom: index < filtered.length - 1 ? '1px solid #ebe5da' : 'none',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  {ub.books.primary_cover_url ? (
+                    <img
+                      src={ub.books.primary_cover_url}
+                      alt={ub.books.title}
+                      style={{
+                        width: '56px',
+                        height: '84px',
+                        objectFit: 'cover',
+                        borderRadius: '6px',
+                        boxShadow: '0 1px 4px rgba(60,45,30,0.1)',
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '56px',
+                      height: '84px',
+                      backgroundColor: '#ebe5da',
+                      borderRadius: '6px',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <span style={{ color: '#b5a78d', fontSize: '10px', textAlign: 'center' }}>No Cover</span>
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#2c2418', lineHeight: 1.3 }}>{ub.books.title}</h2>
+                    <p style={{ fontSize: '14px', color: '#8a7d6b', marginTop: '2px' }}>
+                      {ub.books.author_name}
+                      {ub.books.first_published_year && ` · ${ub.books.first_published_year}`}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                      {ub.rating && (
+                        <span style={{ fontSize: '13px', color: '#c47d2a' }}>
+                          {'★'.repeat(Math.floor(ub.rating))}{ub.rating % 1 !== 0 ? '½' : ''}
+                        </span>
+                      )}
+                      {ub.status === 'reading' && ub.current_page && ub.books.page_count && (
+                        <span style={{ fontSize: '12px', color: '#a09585' }}>
+                          Page {ub.current_page} of {ub.books.page_count}
+                        </span>
+                      )}
+                      {ub.status === 'dnf' && ub.dnf_percent && (
+                        <span style={{ fontSize: '12px', color: '#a09585' }}>
+                          Stopped at {ub.dnf_percent}%
+                        </span>
                       )}
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
 
-        {recentlyUpdated.length > 0 && (
-          <section className="mb-12">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-stone-100 tracking-tight">
-                Recently Added
-              </h2>
-              <button
-                onClick={() => router.push('/my-books')}
-                className="text-amber-600 text-sm hover:text-amber-500 transition-colors"
-              >
-                View library →
-              </button>
-            </div>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-              {recentlyUpdated.map((ub) => (
-                <div key={ub.id} className="group cursor-pointer">
-                  {ub.books.primary_cover_url ? (
-                    <div className="relative">
-                      <img
-                        src={ub.books.primary_cover_url}
-                        alt={ub.books.title}
-                        className="w-full aspect-[2/3] object-cover rounded-xl group-hover:scale-105 transition-all duration-200"
-                      />
-                      {ub.rating && (
-                        <div className="absolute bottom-2 left-2 bg-black/70 rounded-lg px-1.5 py-0.5">
-                          <StarRating rating={ub.rating} />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-[2/3] bg-stone-900 rounded-xl border border-stone-800 flex items-center justify-center">
-                      <span className="text-stone-700 text-xs text-center px-2">{ub.books.title}</span>
-                    </div>
-                  )}
-                  <p className="text-sm font-medium text-stone-100 mt-2 truncate">{ub.books.title}</p>
-                  <p className="text-xs text-stone-500 truncate">{ub.books.author_name}</p>
+                  <span style={{
+                    padding: '4px 10px',
+                    backgroundColor: statusStyle.bg,
+                    color: statusStyle.text,
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    borderRadius: '6px',
+                    flexShrink: 0,
+                  }}>
+                    {getStatusLabel(ub.status)}
+                  </span>
                 </div>
-              ))}
-            </div>
+              )
+            })}
           </section>
         )}
 
-        {userBooks.length === 0 && (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-6">📚</div>
-            <h2 className="text-2xl font-bold text-stone-100 mb-3">Your shelf is empty</h2>
-            <p className="text-stone-500 mb-8 max-w-md mx-auto">
-              Start building your library by searching for books you love, want to read, or are currently reading.
-            </p>
-            <button
-              onClick={() => router.push('/search')}
-              className="px-8 py-3 bg-amber-600 text-stone-950 font-semibold rounded-xl hover:bg-amber-500 transition-all duration-200"
-            >
-              Find your first book
-            </button>
-          </div>
-        )}
-
-        {userBooks.length > 0 && (
-          <section>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => router.push('/search')}
-                className="p-5 rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-900 text-left transition-all duration-200"
-              >
-                <span className="text-2xl mb-2 block">🔍</span>
-                <span className="font-medium text-stone-100">Search Books</span>
-                <p className="text-stone-500 text-sm mt-1">Find your next read</p>
-              </button>
-              <button
-                onClick={() => router.push('/my-books')}
-                className="p-5 rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-900 text-left transition-all duration-200"
-              >
-                <span className="text-2xl mb-2 block">📖</span>
-                <span className="font-medium text-stone-100">My Library</span>
-                <p className="text-stone-500 text-sm mt-1">{counts.total} books shelved</p>
-              </button>
-            </div>
-          </section>
-        )}
-
-        <footer className="mt-16 pt-8 border-t border-stone-900 text-center">
-          <p className="text-stone-700 text-xs">Bookshelf — Track your reading journey</p>
+        <footer style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #ebe5da' }}>
+          <p style={{ color: '#c5b9a8', fontSize: '12px', textAlign: 'center' }}>bookshelf</p>
         </footer>
       </div>
     </div>
