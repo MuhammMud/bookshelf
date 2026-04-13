@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import StarRating from '../components/StarRating'
 
 interface Book {
   id: string
@@ -33,8 +34,9 @@ const TABS = [
   { value: 'dnf', label: 'DNF' },
 ]
 
-export default function MyBooksClient({ userBooks, name }: { userBooks: UserBook[], name: string }) {
+export default function MyBooksClient({ userBooks: initialBooks, name }: { userBooks: UserBook[], name: string }) {
   const [activeTab, setActiveTab] = useState('all')
+  const [userBooks, setUserBooks] = useState(initialBooks)
   const router = useRouter()
 
   const filtered = activeTab === 'all'
@@ -47,6 +49,29 @@ export default function MyBooksClient({ userBooks, name }: { userBooks: UserBook
     read: userBooks.filter((ub) => ub.status === 'read').length,
     want_to_read: userBooks.filter((ub) => ub.status === 'want_to_read').length,
     dnf: userBooks.filter((ub) => ub.status === 'dnf').length,
+  }
+
+  async function handleRate(userBookId: string, rating: number) {
+    setUserBooks((prev) =>
+      prev.map((ub) => ub.id === userBookId ? { ...ub, rating } : ub)
+    )
+
+    try {
+      const response = await fetch('/api/books/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userBookId, rating }),
+      })
+      if (!response.ok) {
+        setUserBooks((prev) =>
+          prev.map((ub) => ub.id === userBookId ? { ...ub, rating: initialBooks.find((b) => b.id === userBookId)?.rating ?? null } : ub)
+        )
+      }
+    } catch {
+      setUserBooks((prev) =>
+        prev.map((ub) => ub.id === userBookId ? { ...ub, rating: initialBooks.find((b) => b.id === userBookId)?.rating ?? null } : ub)
+      )
+    }
   }
 
   function getStatusLabel(status: string) {
@@ -191,11 +216,10 @@ export default function MyBooksClient({ userBooks, name }: { userBooks: UserBook
                       {ub.books.first_published_year && ` · ${ub.books.first_published_year}`}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                      {ub.rating && (
-                        <span style={{ fontSize: '13px', color: '#c47d2a' }}>
-                          {'★'.repeat(Math.floor(ub.rating))}{ub.rating % 1 !== 0 ? '½' : ''}
-                        </span>
-                      )}
+                      <StarRating
+                        rating={ub.rating}
+                        onRate={(rating) => handleRate(ub.id, rating)}
+                      />
                       {ub.status === 'reading' && ub.current_page && ub.books.page_count && (
                         <span style={{ fontSize: '12px', color: '#a09585' }}>
                           Page {ub.current_page} of {ub.books.page_count}
