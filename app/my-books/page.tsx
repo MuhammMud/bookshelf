@@ -43,5 +43,5 @@ export default async function MyBooksPage() {
 
   const name = profile?.display_name || profile?.username || 'Reader'
 
-  return <MyBooksClient userBooks={userBooks || []} name={name} />
+  return <MyBooksClient userBooks={(userBooks || []) as any} name={name} />
 }

@@ -6,8 +6,12 @@ export default async function Home() {
   const supabase = await createSupabaseServer()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
+ if (!user) {
     redirect('/login')
+  }
+
+  if (!user.email_confirmed_at) {
+    redirect('/login?message=verify')
   }
 
   const { data: profile } = await supabase
@@ -36,5 +40,5 @@ export default async function Home() {
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
-  return <HomeClient profile={profile} userBooks={userBooks || []} />
+  return <HomeClient profile={profile} userBooks={(userBooks || []) as any} />
 }

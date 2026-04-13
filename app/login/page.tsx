@@ -1,7 +1,8 @@
 'use client'
 
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,8 +11,15 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
 
   const supabase = createSupabaseBrowser()
+
+  useEffect(() => {
+    if (searchParams.get('message') === 'verify') {
+      setMessage('Please check your email and click the confirmation link before signing in.')
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -47,17 +55,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black text-white">
-      <div className="w-full max-w-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-2">Bookshelf</h1>
-        <p className="text-gray-400 text-center mb-8">
+    <div style={{ minHeight: '100vh', backgroundColor: '#faf6f0', color: '#3d3529', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '400px', padding: '32px 24px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#2c2418', textAlign: 'center', marginBottom: '4px' }}>
+          bookshelf
+        </h1>
+        <p style={{ fontSize: '15px', color: '#a08c6e', textAlign: 'center', marginBottom: '36px' }}>
           {isSignUp ? 'Create your account' : 'Welcome back'}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
           {isSignUp && (
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1">
+            <div style={{ marginBottom: '16px' }}>
+              <label htmlFor="username" style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#3d3529', marginBottom: '6px' }}>
                 Username
               </label>
               <input
@@ -70,14 +80,24 @@ export default function LoginPage() {
                 maxLength={30}
                 pattern="^[a-zA-Z0-9_]+$"
                 title="Letters, numbers, and underscores only"
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:border-white text-white placeholder-gray-500"
                 placeholder="Choose a username"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  backgroundColor: '#f4efe6',
+                  border: '1px solid #e8dfd2',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  color: '#3d3529',
+                  outline: 'none',
+                  boxSizing: 'border-box' as const,
+                }}
               />
             </div>
           )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+          <div style={{ marginBottom: '16px' }}>
+            <label htmlFor="email" style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#3d3529', marginBottom: '6px' }}>
               Email
             </label>
             <input
@@ -86,13 +106,23 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:border-white text-white placeholder-gray-500"
               placeholder="you@example.com"
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                backgroundColor: '#f4efe6',
+                border: '1px solid #e8dfd2',
+                borderRadius: '10px',
+                fontSize: '15px',
+                color: '#3d3529',
+                outline: 'none',
+                boxSizing: 'border-box' as const,
+              }}
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+          <div style={{ marginBottom: '24px' }}>
+            <label htmlFor="password" style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#3d3529', marginBottom: '6px' }}>
               Password
             </label>
             <input
@@ -102,31 +132,58 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:border-white text-white placeholder-gray-500"
               placeholder="At least 6 characters"
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                backgroundColor: '#f4efe6',
+                border: '1px solid #e8dfd2',
+                borderRadius: '10px',
+                fontSize: '15px',
+                color: '#3d3529',
+                outline: 'none',
+                boxSizing: 'border-box' as const,
+              }}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: '#5b7a5e',
+              color: '#faf6f0',
+              fontSize: '15px',
+              fontWeight: 600,
+              border: 'none',
+              borderRadius: '10px',
+              cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+            }}
           >
             {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
           </button>
         </form>
 
         {message && (
-          <p className={`mt-4 text-center text-sm ${message.includes('Check your email') ? 'text-green-400' : 'text-red-400'}`}>
+          <p style={{
+            marginTop: '16px',
+            textAlign: 'center',
+            fontSize: '14px',
+            color: message.includes('Check your email') || message.includes('confirmation') ? '#5b7a5e' : '#b05050',
+            lineHeight: 1.5,
+          }}>
             {message}
           </p>
         )}
 
-        <p className="mt-6 text-center text-gray-400 text-sm">
+        <p style={{ marginTop: '24px', textAlign: 'center', color: '#a08c6e', fontSize: '14px' }}>
           {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             onClick={() => { setIsSignUp(!isSignUp); setMessage('') }}
-            className="text-white underline hover:no-underline"
+            style={{ background: 'none', border: 'none', color: '#5b7a5e', fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}
           >
             {isSignUp ? 'Sign in' : 'Sign up'}
           </button>
