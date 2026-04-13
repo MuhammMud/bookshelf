@@ -22,6 +22,7 @@ export default async function MyBooksPage() {
       id,
       status,
       rating,
+      notes,
       date_started,
       date_finished,
       current_page,

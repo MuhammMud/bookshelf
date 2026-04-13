@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import StarRating from '../components/StarRating'
 
@@ -17,6 +17,7 @@ interface UserBook {
   id: string
   status: string
   rating: number | null
+  notes: string | null
   date_started: string | null
   date_finished: string | null
   current_page: number | null
@@ -37,6 +38,9 @@ const TABS = [
 export default function MyBooksClient({ userBooks: initialBooks, name }: { userBooks: UserBook[], name: string }) {
   const [activeTab, setActiveTab] = useState('all')
   const [userBooks, setUserBooks] = useState(initialBooks)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [savingNotes, setSavingNotes] = useState<string | null>(null)
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
   const filtered = activeTab === 'all'
@@ -55,7 +59,6 @@ export default function MyBooksClient({ userBooks: initialBooks, name }: { userB
     setUserBooks((prev) =>
       prev.map((ub) => ub.id === userBookId ? { ...ub, rating } : ub)
     )
-
     try {
       const response = await fetch('/api/books/rate', {
         method: 'POST',
@@ -72,6 +75,32 @@ export default function MyBooksClient({ userBooks: initialBooks, name }: { userB
         prev.map((ub) => ub.id === userBookId ? { ...ub, rating: initialBooks.find((b) => b.id === userBookId)?.rating ?? null } : ub)
       )
     }
+  }
+
+  function handleNotesChange(userBookId: string, notes: string) {
+    setUserBooks((prev) =>
+      prev.map((ub) => ub.id === userBookId ? { ...ub, notes } : ub)
+    )
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+
+    saveTimerRef.current = setTimeout(() => {
+      saveNotes(userBookId, notes)
+    }, 800)
+  }
+
+  async function saveNotes(userBookId: string, notes: string) {
+    setSavingNotes(userBookId)
+    try {
+      await fetch('/api/books/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userBookId, notes }),
+      })
+    } catch {
+      // silently fail
+    }
+    setSavingNotes(null)
   }
 
   function getStatusLabel(status: string) {
@@ -169,81 +198,137 @@ export default function MyBooksClient({ userBooks: initialBooks, name }: { userB
           <section>
             {filtered.map((ub, index) => {
               const statusStyle = getStatusColor(ub.status)
+              const isExpanded = expandedId === ub.id
 
               return (
                 <div
                   key={ub.id}
                   style={{
-                    display: 'flex',
-                    gap: '16px',
                     padding: '16px 0',
                     borderBottom: index < filtered.length - 1 ? '1px solid #ebe5da' : 'none',
-                    alignItems: 'flex-start',
                   }}
                 >
-                  {ub.books.primary_cover_url ? (
-                    <img
-                      src={ub.books.primary_cover_url}
-                      alt={ub.books.title}
-                      style={{
-                        width: '56px',
-                        height: '84px',
-                        objectFit: 'cover',
-                        borderRadius: '6px',
-                        boxShadow: '0 1px 4px rgba(60,45,30,0.1)',
-                        flexShrink: 0,
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '56px',
-                      height: '84px',
-                      backgroundColor: '#ebe5da',
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                    {ub.books.primary_cover_url ? (
+                      <img
+                        src={ub.books.primary_cover_url}
+                        alt={ub.books.title}
+                        style={{
+                          width: '56px',
+                          height: '84px',
+                          objectFit: 'cover',
+                          borderRadius: '6px',
+                          boxShadow: '0 1px 4px rgba(60,45,30,0.1)',
+                          flexShrink: 0,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => setExpandedId(isExpanded ? null : ub.id)}
+                      />
+                    ) : (
+                      <div
+                        onClick={() => setExpandedId(isExpanded ? null : ub.id)}
+                        style={{
+                          width: '56px',
+                          height: '84px',
+                          backgroundColor: '#ebe5da',
+                          borderRadius: '6px',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ color: '#b5a78d', fontSize: '10px', textAlign: 'center' }}>No Cover</span>
+                      </div>
+                    )}
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h2
+                        style={{ fontSize: '16px', fontWeight: 600, color: '#2c2418', lineHeight: 1.3, cursor: 'pointer' }}
+                        onClick={() => setExpandedId(isExpanded ? null : ub.id)}
+                      >
+                        {ub.books.title}
+                      </h2>
+                      <p style={{ fontSize: '14px', color: '#8a7d6b', marginTop: '2px' }}>
+                        {ub.books.author_name}
+                        {ub.books.first_published_year && ` · ${ub.books.first_published_year}`}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                        <StarRating
+                          rating={ub.rating}
+                          onRate={(rating) => handleRate(ub.id, rating)}
+                        />
+                        {ub.status === 'reading' && ub.current_page && ub.books.page_count && (
+                          <span style={{ fontSize: '12px', color: '#a09585' }}>
+                            Page {ub.current_page} of {ub.books.page_count}
+                          </span>
+                        )}
+                        {ub.status === 'dnf' && ub.dnf_percent && (
+                          <span style={{ fontSize: '12px', color: '#a09585' }}>
+                            Stopped at {ub.dnf_percent}%
+                          </span>
+                        )}
+                        {!isExpanded && ub.notes && (
+                          <span
+                            style={{ fontSize: '12px', color: '#b5a78d', cursor: 'pointer' }}
+                            onClick={() => setExpandedId(ub.id)}
+                          >
+                            📝 has notes
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <span style={{
+                      padding: '4px 10px',
+                      backgroundColor: statusStyle.bg,
+                      color: statusStyle.text,
+                      fontSize: '12px',
+                      fontWeight: 500,
                       borderRadius: '6px',
                       flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
                     }}>
-                      <span style={{ color: '#b5a78d', fontSize: '10px', textAlign: 'center' }}>No Cover</span>
-                    </div>
-                  )}
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#2c2418', lineHeight: 1.3 }}>{ub.books.title}</h2>
-                    <p style={{ fontSize: '14px', color: '#8a7d6b', marginTop: '2px' }}>
-                      {ub.books.author_name}
-                      {ub.books.first_published_year && ` · ${ub.books.first_published_year}`}
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                      <StarRating
-                        rating={ub.rating}
-                        onRate={(rating) => handleRate(ub.id, rating)}
-                      />
-                      {ub.status === 'reading' && ub.current_page && ub.books.page_count && (
-                        <span style={{ fontSize: '12px', color: '#a09585' }}>
-                          Page {ub.current_page} of {ub.books.page_count}
-                        </span>
-                      )}
-                      {ub.status === 'dnf' && ub.dnf_percent && (
-                        <span style={{ fontSize: '12px', color: '#a09585' }}>
-                          Stopped at {ub.dnf_percent}%
-                        </span>
-                      )}
-                    </div>
+                      {getStatusLabel(ub.status)}
+                    </span>
                   </div>
 
-                  <span style={{
-                    padding: '4px 10px',
-                    backgroundColor: statusStyle.bg,
-                    color: statusStyle.text,
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    borderRadius: '6px',
-                    flexShrink: 0,
-                  }}>
-                    {getStatusLabel(ub.status)}
-                  </span>
+                  {/* Expandable notes */}
+                  {isExpanded && (
+                    <div style={{ marginTop: '12px', marginLeft: '72px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <label style={{ fontSize: '13px', color: '#a08c6e', fontWeight: 500 }}>
+                          Your notes
+                        </label>
+                        {savingNotes === ub.id && (
+                          <span style={{ fontSize: '11px', color: '#b5a78d' }}>Saving...</span>
+                        )}
+                        {savingNotes !== ub.id && ub.notes && (
+                          <span style={{ fontSize: '11px', color: '#b5a78d' }}>Saved</span>
+                        )}
+                      </div>
+                      <textarea
+                        value={ub.notes || ''}
+                        onChange={(e) => handleNotesChange(ub.id, e.target.value)}
+                        placeholder="Thoughts, quotes, things to remember..."
+                        style={{
+                          width: '100%',
+                          minHeight: '100px',
+                          padding: '12px',
+                          backgroundColor: '#f4efe6',
+                          border: '1px solid #e8dfd2',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          color: '#3d3529',
+                          outline: 'none',
+                          resize: 'vertical',
+                          lineHeight: 1.6,
+                          boxSizing: 'border-box' as const,
+                          fontFamily: 'inherit',
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               )
             })}
